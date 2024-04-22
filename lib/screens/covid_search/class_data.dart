@@ -1,15 +1,25 @@
 class CovidData {
   final String country;
-  final int deaths;
-  final String month;
+  final String region;
+  final Map<String, Map<String, int>> cases;
 
-  CovidData({required this.country, required this.deaths, required this.month});
+  CovidData({
+    required this.country,
+    required this.region,
+    required this.cases,
+  });
 
   factory CovidData.fromJson(Map<String, dynamic> json) {
+    Map<String, Map<String, int>> casesMap = {};
+    (json['cases'] as Map<String, dynamic>).forEach((key, value) {
+      casesMap[key] = Map<String, int>.from(value);
+    });
+
     return CovidData(
       country: json['country'],
-      deaths: json['deaths'],
-      month: json['month'],
+      region: json['region'],
+      cases: casesMap,
     );
   }
 }
+

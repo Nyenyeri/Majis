@@ -17,7 +17,17 @@ class PhoneCheck extends StatefulWidget {
 }
 
 class _PhoneCheckState extends State<PhoneCheck> {
-  TextEditingController _countryController = TextEditingController();
+  TextEditingController _phoneController = TextEditingController();
+  late PhoneData _fetchedData;
+
+  _PhoneCheckState() {
+    _fetchedData = PhoneData(
+      country: "",
+      location: "",
+      validate: false,
+      code: 0,
+    );
+  }
 
   Future<PhoneData> fetchPhoneData(String phone) async {
     final apiKey = '2MO9GcFTUfQTPX8EaJm8RNqMY2JquGIBT21tHJX3';
@@ -29,10 +39,9 @@ class _PhoneCheckState extends State<PhoneCheck> {
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)[phone];
-      print(data);
+      final data = jsonDecode(response.body);
       return PhoneData(
-        country: phone,
+        country: data["country"],
         location: data["location"],
         validate: data["is_valid"],
         code: data["country_code"],
@@ -81,34 +90,20 @@ class _PhoneCheckState extends State<PhoneCheck> {
               children: [
                 SearcField(
                   text: "Enter number",
-                  countryController: _countryController,
+                  countryController: _phoneController,
                   onPressed: () async {
-                    final country = _countryController.text;
-                    print(country);
-                    await fetchPhoneData(country);
-                    setState(() {});
+                    final phone = _phoneController.text;
+                    _phoneController.clear();
+                    final fetchedData = await fetchPhoneData(phone);
+                    setState(() {
+                      _fetchedData = fetchedData;
+                    });
                   },
                 ),
                 SizedBox(height: 20),
-                FutureBuilder<PhoneData>(
-                  future: fetchPhoneData(_countryController.text),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          'Error: ${snapshot.error}',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                          ),
-                        ),
-                      );
-                    } else {
-                      final phoneData = snapshot.data!;
-                      return Container(
-                        height: 600,
+                _fetchedData.country.isNotEmpty
+                    ? Container(
+                        height: 550,
                         width: MediaQuery.of(context).size.width,
                         margin:
                             EdgeInsets.symmetric(horizontal: 25, vertical: 20),
@@ -120,24 +115,25 @@ class _PhoneCheckState extends State<PhoneCheck> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             SizedBox(height: defaultPadding * 2),
-                            BoldText(
-                                text: "Phone Info",
-                                size: 25,
-                                color: blackColor),
+                            const BoldText(
+                              text: "Phone Info",
+                              size: 25,
+                              color: blackColor,
+                            ),
                             SizedBox(height: 20),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 PhoneInfo(
                                   textAPI: "Is Valid:",
-                                  textPhone: phoneData.validate,
+                                  textPhone: _fetchedData.validate.toString(),
                                   color: Colors.blue,
                                   width: 150,
                                   height: 100,
                                 ),
                                 PhoneInfo(
                                   textAPI: "Location:",
-                                  textPhone: phoneData.location,
+                                  textPhone: _fetchedData.location,
                                   color: Colors.blue,
                                   width: 150,
                                   height: 100,
@@ -146,7 +142,7 @@ class _PhoneCheckState extends State<PhoneCheck> {
                             ),
                             PhoneInfo(
                               textAPI: "Country Code:",
-                              textPhone: phoneData.code,
+                              textPhone: _fetchedData.code.toString(),
                               color: Colors.green,
                               width: 250,
                               height: 100,
@@ -157,7 +153,7 @@ class _PhoneCheckState extends State<PhoneCheck> {
                               children: [
                                 PhoneInfo(
                                   textAPI: "Country:",
-                                  textPhone: phoneData.country,
+                                  textPhone: _fetchedData.country,
                                   color: Colors.blue,
                                   width: 150,
                                   height: 100,
@@ -166,10 +162,13 @@ class _PhoneCheckState extends State<PhoneCheck> {
                             ),
                           ],
                         ),
-                      );
-                    }
-                  },
-                ),
+                      )
+                    : const Center(
+                        child: Text(
+                          "Please, Make a search",
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      ),
               ],
             ),
           ),
